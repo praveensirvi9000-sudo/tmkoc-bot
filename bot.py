@@ -20,24 +20,23 @@ def save_db():
 # ================= START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🎬 <b>Welcome to TMKOC Episode Bot!</b> 🎬<br><br>"
-        "🙏 <b>Namaste!</b><br><br>"
-        "Yeh bot Taarak Mehta Ka Ooltah Chashmah ke fans ke liye banaya gaya hai ❤️<br><br>"
-        "📺 <b>Is bot ke through aap:</b><br>"
-        "• TMKOC episodes easily search kar sakte ho<br>"
-        "• Sirf episode number bhej kar direct video paa sakte ho<br>"
-        "• Koi website ya ads ki zarurat nahi<br><br>"
-        "🧾 <b>Bot use karne ka tareeqa:</b><br>"
-        "• Episode number likho aur send karo<br>"
-        "• Episode available hoga to turant mil jaayega<br><br>"
-        "✨ <b>Example:</b><br>"
-        "4627<br><br>"
-        "❗ <b>Note:</b><br>"
-        "Agar episode available nahi ho to request bhejo:<br>"
-        "@praveen_sirvii<br><br>"
-        "🙏 <b>Thank you for using TMKOC Episode Bot!</b><br>"
-        "Enjoy watching 😄",
-        parse_mode="HTML"
+        "🎬 Welcome to TMKOC Episode Bot! 🎬\n\n"
+        "🙏 Namaste!\n\n"
+        "Yeh bot Taarak Mehta Ka Ooltah Chashmah ke fans ke liye banaya gaya hai ❤️\n\n"
+        "📺 Is bot ke through aap:\n"
+        "- TMKOC ke episodes easily search kar sakte ho\n"
+        "- Sirf episode number bhej kar direct video paa sakte ho\n"
+        "- Koi website, ads ya extra steps ki zarurat nahi\n\n"
+        "🧾 Bot use karne ka tareeqa:\n"
+        "- Bas episode number likho aur send karo\n"
+        "- Agar episode available hoga, turant video mil jaayega\n\n"
+        "✨ Example:\n"
+        "4627\n\n"
+        "❗ Note:\n"
+        "Agar koi episode available nahi hota hai to aap request bhej sakte ho:\n"
+        "@praveen_sirvii\n\n"
+        "🙏 Thank you for using TMKOC Episode Bot!\n"
+        "Enjoy watching 😄"
     )
 
 # ============ AUTO SAVE FROM CHANNEL ============
@@ -65,26 +64,22 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     processing = await update.message.reply_text(
-        "⏳ *Processing your request...*\n"
-        "_Please wait while we find your episode_",
-        parse_mode="Markdown"
+        "⏳ Processing your request...\n"
+        "Please wait while we find your episode"
     )
 
     await asyncio.sleep(1)
 
     if ep not in EPISODES:
         await processing.edit_text(
-            "❌ *Episode not found*\n\n"
-            "😔 Yeh episode abhi available nahi hai.\n\n"
-            "📩 *Request ke liye contact karein:*\n"
-            "👉 @praveen_sirvii",
-            parse_mode="Markdown"
+            "❌ Episode not available\n\n"
+            "📩 Contact for request:\n"
+            "@praveen_sirvii"
         )
         return
 
     await processing.edit_text(
-        "✅ *Episode found!*\n🎥 Sending video...",
-        parse_mode="Markdown"
+        "✅ Episode found!\n🎥 Sending video..."
     )
 
     await context.bot.copy_message(
