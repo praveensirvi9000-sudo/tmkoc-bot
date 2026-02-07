@@ -2,8 +2,8 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 import json, os, re, asyncio
 
-BOT_TOKEN = os.getenv("8413029258:AAHAT_Vb4MHYIxW_J1QxNNnJYD-kU978Rss")   # Railway ENV use karega
-SOURCE_CHANNEL = int(os.getenv("-1003735167884"))
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+SOURCE_CHANNEL = int(os.getenv("SOURCE_CHANNEL"))
 DB_FILE = "episodes.json"
 
 # Load DB
