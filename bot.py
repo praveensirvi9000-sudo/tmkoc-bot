@@ -20,24 +20,24 @@ def save_db():
 # ================= START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🎬 *Welcome to TMKOC Episode Bot!* 🎬\n\n"
-        "🙏 *Namaste!*\n\n"
-        "Yeh bot Taarak Mehta Ka Ooltah Chashmah ke fans ke liye banaya gaya hai ❤️\n\n"
-        "📺 *Is bot ke through aap:*\n"
-        "• TMKOC episodes easily search kar sakte ho\n"
-        "• Sirf episode number bhej kar direct video paa sakte ho\n"
-        "• Koi website ya ads ki zarurat nahi\n\n"
-        "🧾 *Bot use karne ka tareeqa:*\n"
-        "• Episode number likho aur send karo\n"
-        "• Episode available hoga to turant mil jaayega\n\n"
-        "✨ *Example:*\n"
-        "4627\n\n"
-        "❗ *Note:*\n"
-        "Agar episode available nahi ho to request bhejo:\n"
-        "@praveen_sirvii\n\n"
-        "🙏 *Thank you for using TMKOC Episode Bot!*\n"
+        "🎬 <b>Welcome to TMKOC Episode Bot!</b> 🎬<br><br>"
+        "🙏 <b>Namaste!</b><br><br>"
+        "Yeh bot Taarak Mehta Ka Ooltah Chashmah ke fans ke liye banaya gaya hai ❤️<br><br>"
+        "📺 <b>Is bot ke through aap:</b><br>"
+        "• TMKOC episodes easily search kar sakte ho<br>"
+        "• Sirf episode number bhej kar direct video paa sakte ho<br>"
+        "• Koi website ya ads ki zarurat nahi<br><br>"
+        "🧾 <b>Bot use karne ka tareeqa:</b><br>"
+        "• Episode number likho aur send karo<br>"
+        "• Episode available hoga to turant mil jaayega<br><br>"
+        "✨ <b>Example:</b><br>"
+        "4627<br><br>"
+        "❗ <b>Note:</b><br>"
+        "Agar episode available nahi ho to request bhejo:<br>"
+        "@praveen_sirvii<br><br>"
+        "🙏 <b>Thank you for using TMKOC Episode Bot!</b><br>"
         "Enjoy watching 😄",
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
 
 # ============ AUTO SAVE FROM CHANNEL ============
