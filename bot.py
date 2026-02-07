@@ -19,27 +19,8 @@ def save_db():
 
 # ================= START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "🎬 *Welcome to TMKOC Episode Bot!* 🎬\n\n"
-        "🙏 *Namaste!*\n\n"
-        "Yeh bot specially *Taarak Mehta Ka Ooltah Chashmah* ke fans ke liye "
-        "banaya gaya hai ❤️\n\n"
-        "📺 *Is bot ke through aap:*\n"
-        "✅ TMKOC ke episodes easily search kar sakte ho\n"
-        "✅ Sirf episode number bhej kar direct video paa sakte ho\n"
-        "✅ Koi website, ads ya extra steps ki zarurat nahi\n\n"
-        "🧾 *Bot use karne ka tareeqa:*\n"
-        "➡️ Bas episode number likho aur send karo\n"
-        "➡️ Agar episode available hoga, turant video mil jaayega\n\n"
-        "✨ *Example:*\n"
-        "`4627`\n\n"
-        "❗ *Note:*\n"
-        "Agar koi episode available nahi hota hai to aap request bhej sakte ho 👇\n"
-        "📩 @praveen_sirvii\n\n"
-        "🙏 *Thank you for using TMKOC Episode Bot!*\n"
-        "Enjoy watching 😄",
-        parse_mode="Markdown"
-    )
+    print("START RECEIVED")
+    await update.message.reply_text("Bot alive ✅")
 
 # ============ AUTO SAVE FROM CHANNEL ============
 async def auto_save(update: Update, context: ContextTypes.DEFAULT_TYPE):
