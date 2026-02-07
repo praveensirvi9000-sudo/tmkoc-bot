@@ -17,14 +17,31 @@ def save_db():
     with open(DB_FILE, "w") as f:
         json.dump(EPISODES, f, indent=2)
 
+# ================= START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🎬 Welcome to TMKOC Episode Bot!\n\n"
-        "🧾 Episode number bhejo\n"
-        "✨ Example: 4627"
+        "🎬 *Welcome to TMKOC Episode Bot!* 🎬\n\n"
+        "🙏 *Namaste!*\n\n"
+        "Yeh bot specially *Taarak Mehta Ka Ooltah Chashmah* ke fans ke liye "
+        "banaya gaya hai ❤️\n\n"
+        "📺 *Is bot ke through aap:*\n"
+        "✅ TMKOC ke episodes easily search kar sakte ho\n"
+        "✅ Sirf episode number bhej kar direct video paa sakte ho\n"
+        "✅ Koi website, ads ya extra steps ki zarurat nahi\n\n"
+        "🧾 *Bot use karne ka tareeqa:*\n"
+        "➡️ Bas episode number likho aur send karo\n"
+        "➡️ Agar episode available hoga, turant video mil jaayega\n\n"
+        "✨ *Example:*\n"
+        "`4627`\n\n"
+        "❗ *Note:*\n"
+        "Agar koi episode available nahi hota hai to aap request bhej sakte ho 👇\n"
+        "📩 @praveen_sirvii\n\n"
+        "🙏 *Thank you for using TMKOC Episode Bot!*\n"
+        "Enjoy watching 😄",
+        parse_mode="Markdown"
     )
 
-# AUTO SAVE FROM CHANNEL
+# ============ AUTO SAVE FROM CHANNEL ============
 async def auto_save(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.channel_post:
         return
@@ -42,28 +59,44 @@ async def auto_save(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     print(f"Saved Ep{ep}")
 
-# USER SEARCH
+# ================= USER SEARCH =================
 async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ep = update.message.text.strip()
     if not ep.isdigit():
         return
 
-    processing = await update.message.reply_text("⏳ Processing...")
+    processing = await update.message.reply_text(
+        "⏳ *Processing your request...*\n"
+        "_Please wait while we find your episode_",
+        parse_mode="Markdown"
+    )
+
     await asyncio.sleep(1)
 
     if ep not in EPISODES:
         await processing.edit_text(
-            "❌ Episode not available\n📩 Contact: @praveen_sirvii"
+            "❌ *Episode not found*\n\n"
+            "😔 Yeh episode abhi available nahi hai.\n\n"
+            "📩 *Request ke liye contact karein:*\n"
+            "👉 @praveen_sirvii",
+            parse_mode="Markdown"
         )
         return
+
+    await processing.edit_text(
+        "✅ *Episode found!*\n🎥 Sending video...",
+        parse_mode="Markdown"
+    )
 
     await context.bot.copy_message(
         chat_id=update.message.chat_id,
         from_chat_id=SOURCE_CHANNEL,
         message_id=EPISODES[ep]["message_id"]
     )
+
     await processing.delete()
 
+# ================= MAIN =================
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
