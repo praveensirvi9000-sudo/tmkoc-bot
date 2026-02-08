@@ -17,6 +17,9 @@ AUTO_DELETE_TIME = 120  # seconds
 
 QUALITY_ORDER = ["1080p", "720p", "540p", "360p", "240p"]
 
+# Is set ko add kiya hai taaki delete task kill na ho (Fix for auto-delete)
+BACKGROUND_TASKS = set()
+
 # ================= TEXTS =================
 INTRO_TEXT = (
     "*TMKOC Episode Bot*\n\n"
@@ -34,6 +37,7 @@ INTRO_TEXT = (
     "_Happy watching 😊_"
 )
 
+# Yahan Maine \ add kiya hai username me (Fix for Not Found Message)
 NOT_FOUND_TEXT = (
     "*❌ Episode Available Nahi Hai*\n\n"
     "Aapne jo episode number search kiya hai,\n"
@@ -43,7 +47,7 @@ NOT_FOUND_TEXT = (
     "• Upload processing me ho\n"
     "• Galat episode number\n\n"
     "*Request ke liye admin se contact karein 👇*\n"
-    "👉 @Admi88_bot\n\n"
+    "👉 @Admi88\_bot\n\n"
     "_Dhanyavaad 🙏_\n"
     "*TMKOC Episode Bot*"
 )
@@ -148,7 +152,10 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         rows = sheet.get("A2:C10000")
     except:
-        await processing.delete()
+        try:
+            await processing.delete()
+        except:
+            pass
         await update.message.reply_text(
             "⚠️ Temporary issue aa raha hai.\n"
             "Please 1 minute baad try karo 🙏"
@@ -163,7 +170,10 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if str(r[0]).strip() == ep:
             data.append(r)
 
-    await processing.delete()
+    try:
+        await processing.delete()
+    except:
+        pass
 
     if len(data) == 0:
         await update.message.reply_text(
@@ -183,23 +193,28 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for q in QUALITY_ORDER:
         for r in data:
             if r[1] == q:
-                m = await context.bot.copy_message(
-                    chat_id=update.message.chat_id,
-                    from_chat_id=SOURCE_CHANNEL,
-                    message_id=int(r[2])
-                )
-                sent_msgs.append(m)
-                await asyncio.sleep(0.4)
+                try:
+                    m = await context.bot.copy_message(
+                        chat_id=update.message.chat_id,
+                        from_chat_id=SOURCE_CHANNEL,
+                        message_id=int(r[2])
+                    )
+                    sent_msgs.append(m)
+                    await asyncio.sleep(0.4)
+                except:
+                    pass
 
     warn = await update.message.reply_text(
         AUTO_DELETE_TEXT,
         parse_mode="Markdown"
     )
 
-    # 🔥 NON-BLOCKING AUTO DELETE
-    asyncio.create_task(
+    # 🔥 FIXED: Safe Task Creation (Taaki delete ruk na jaye)
+    task = asyncio.create_task(
         auto_delete(sent_msgs + [warn], AUTO_DELETE_TIME)
     )
+    BACKGROUND_TASKS.add(task)
+    task.add_done_callback(BACKGROUND_TASKS.discard)
 
 # ================= MAIN =================
 def main():
@@ -209,8 +224,9 @@ def main():
     app.add_handler(MessageHandler(filters.UpdateType.CHANNEL_POST, auto_save))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_episode))
 
-    print("TMKOC Bot running (FINAL • STABLE • FAST)")
+    print("TMKOC Bot running (FIXED • STABLE)")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
+    
