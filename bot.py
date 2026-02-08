@@ -23,6 +23,51 @@ AUTO_DELETE_TIME = 120  # 2 minutes
 
 QUALITY_ORDER = ["1080p", "720p", "540p", "360p", "240p"]
 
+# ================= TEXTS =================
+INTRO_TEXT = (
+    "🎬 TMKOC Episode Bot\n\n"
+    "Namaste 🙏\n\n"
+    "Ye bot specially *Taarak Mehta Ka Ooltah Chashmah* ke fans ke liye banaya gaya hai ❤️\n\n"
+    "Yahan aapko milega:\n"
+    "• TMKOC ke old & new episodes\n"
+    "• Multiple video qualities (240p se 1080p tak)\n"
+    "• Simple, fast aur ad-free experience\n\n"
+    "📌 Use ka tareeqa:\n"
+    "Bas episode number bhejo aur quality select karo.\n\n"
+    "🧾 Example:\n"
+    "4627\n\n"
+    "⚠️ Note:\n"
+    "Copyright reasons ki wajah se videos limited time ke liye hoti hain.\n"
+    "Isliye episode milte hi Saved Messages me forward kar lena.\n\n"
+    "Enjoy watching 😄"
+)
+
+NOT_FOUND_TEXT = (
+    "❌ Episode available nahi hai 😔\n\n"
+    "Aapne jo episode manga hai, wo abhi hamare database me nahi mila.\n\n"
+    "📩 Agar aap is episode ki request karna chahte ho,\n"
+    "to admin se contact karein 👇\n\n"
+    "👉 @Admi88_bot\n\n"
+    "Thanks 🙏\n"
+    "TMKOC Episode Bot"
+)
+
+AUTO_DELETE_TEXT = (
+    "⚠️ Important Notice\n\n"
+    "Copyright aur safety reasons ki wajah se\n"
+    "ye episode ⏳ *2 minutes* ke andar automatically delete ho jaayega.\n\n"
+    "📥 Agar aap baad me dekhna chahte ho,\n"
+    "to please is video ko abhi apne *Saved Messages* me forward kar lo.\n\n"
+    "🙏 Aapke support ke liye dhanyavaad\n"
+    "Enjoy watching 😊"
+)
+
+FOUND_TEXT = (
+    "🎉 Good news!\n\n"
+    "Aapka episode mil gaya hai 😄\n\n"
+    "Ab niche se apni pasand ki *video quality* select karo 👇"
+)
+
 # ================= GOOGLE SHEET (ENV JSON) =================
 import gspread
 from google.oauth2.service_account import Credentials
@@ -65,21 +110,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
     if await is_verified(user_id, context):
-        await update.message.reply_text(
-            "🎬 TMKOC Episode Bot\n\n"
-            "Episode number bhejo 👇\n"
-            "Example: 4627"
-        )
+        await update.message.reply_text(INTRO_TEXT)
         return
 
     keyboard = [
-        [InlineKeyboardButton("🔔 Join Now", url="https://t.me/Tmkocc_backup")],
+        [InlineKeyboardButton("🔔 Join Channel", url="https://t.me/Tmkocc_backup")],
         [InlineKeyboardButton("✅ Verify Now", callback_data="verify")]
     ]
 
     await update.message.reply_text(
-        "🔒 Bot use karne ke liye pehle channel join karo\n\n"
-        "Join ke baad Verify Now par click karo 👇",
+        "🔒 Bot use karne ke liye pehle channel join karna zaroori hai.\n\n"
+        "1️⃣ Niche diye gaye button se channel join karo\n"
+        "2️⃣ Join ke baad **Verify Now** par click karo\n\n"
+        "Verify hote hi aapko poora bot access mil jaayega 👇",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -90,8 +133,12 @@ async def verify_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if await is_verified(q.from_user.id, context):
         await q.edit_message_text(
-            "✅ Verify successful 🎉\n\n"
-            "Ab episode number bhejo 👇"
+            "✅ Verification successful 🎉\n\n"
+            "Aap successfully verify ho chuke ho."
+        )
+        await context.bot.send_message(
+            chat_id=q.message.chat_id,
+            text=INTRO_TEXT
         )
     else:
         await q.answer("❌ Pehle channel join karo", show_alert=True)
@@ -136,10 +183,7 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await processing.delete()
 
     if not data:
-        await update.message.reply_text(
-            "❌ Episode available nahi hai 😔\n\n"
-            "Request ke liye: @Admi88_bot"
-        )
+        await update.message.reply_text(NOT_FOUND_TEXT)
         return
 
     buttons = []
@@ -154,7 +198,7 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
 
     await update.message.reply_text(
-        f"🎬 Episode {ep} mil gaya\nQuality select karo 👇",
+        FOUND_TEXT,
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 
@@ -171,12 +215,7 @@ async def send_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message_id=int(msg_id)
     )
 
-    warn = await q.message.reply_text(
-        "⚠️ Important Notice\n\n"
-        "Copyright / safety reasons ki wajah se\n"
-        "ye episode 2 minutes ke andar delete ho jaayega ⏳\n\n"
-        "Agar baad me dekhna ho to isse Saved Messages me forward kar lo 📥"
-    )
+    warn = await q.message.reply_text(AUTO_DELETE_TEXT)
 
     await asyncio.sleep(AUTO_DELETE_TIME)
     try:
