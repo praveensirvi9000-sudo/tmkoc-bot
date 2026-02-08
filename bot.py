@@ -39,12 +39,10 @@ NOT_FOUND_TEXT = (
     "Aapne jo episode number search kiya hai,\n"
     "wo abhi hamare database me maujood nahi hai 😔\n\n"
     "*Possible reasons:*\n"
-    "• Episode upload nahi hua hai\n"
-    "• Thodi der pehle hi telecast hua ho\n"
-    "• Upload processing me ho\n\n"
-    "*Aap kya kar sakte ho?*\n"
-    "Agar aap is episode ki request karna chahte ho,\n"
-    "to admin se directly contact karein 👇\n\n"
+    "• Episode abhi upload nahi hua\n"
+    "• Upload processing me ho\n"
+    "• Galat episode number\n\n"
+    "*Request ke liye admin se contact karein 👇*\n"
     "👉 @Admi88_bot\n\n"
     "_Dhanyavaad 🙏_\n"
     "*TMKOC Episode Bot*"
@@ -54,8 +52,7 @@ AUTO_DELETE_TEXT = (
     "*⚠️ Important Notice*\n\n"
     "Copyright aur safety reasons ki wajah se\n"
     "ye episode *2 minutes* ke andar automatically delete ho jaayega.\n\n"
-    "📥 Please is video ko abhi apne _Saved Messages_ me "
-    "forward kar lo.\n\n"
+    "📥 Please is video ko abhi apne _Saved Messages_ me forward kar lo.\n\n"
     "_Support ke liye shukriya ❤️_"
 )
 
@@ -98,6 +95,15 @@ async def force_sub_message(update):
         "@Tmkocc_backup"
     )
 
+# ================= AUTO DELETE (NON-BLOCKING) =================
+async def auto_delete(messages, delay):
+    await asyncio.sleep(delay)
+    for m in messages:
+        try:
+            await m.delete()
+        except:
+            pass
+
 # ================= START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_force_sub(update.effective_user.id, context):
@@ -137,10 +143,19 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     processing = await update.message.reply_text("⏳ Episode check ho raha hai...")
-    await asyncio.sleep(1)
+    await asyncio.sleep(0.5)
 
-    rows = sheet.get_all_values()
-    data = [r for r in rows[1:] if len(r) >= 3 and r[0] == ep]
+    try:
+        rows = sheet.get("A2:C10000")  # FAST & SAFE
+    except:
+        await processing.delete()
+        await update.message.reply_text(
+            "⚠️ Temporary issue aa raha hai.\n"
+            "Please 1 minute baad try karo 🙏"
+        )
+        return
+
+    data = [r for r in rows if len(r) >= 3 and r[0] == ep]
 
     await processing.delete()
 
@@ -165,20 +180,17 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     message_id=int(r[2])
                 )
                 sent_msgs.append(m)
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.4)
 
     warn = await update.message.reply_text(
         AUTO_DELETE_TEXT,
         parse_mode="Markdown"
     )
 
-    await asyncio.sleep(AUTO_DELETE_TIME)
-    try:
-        for m in sent_msgs:
-            await m.delete()
-        await warn.delete()
-    except:
-        pass
+    # 🔥 NON-BLOCKING AUTO DELETE
+    asyncio.create_task(
+        auto_delete(sent_msgs + [warn], AUTO_DELETE_TIME)
+    )
 
 # ================= MAIN =================
 def main():
@@ -188,7 +200,7 @@ def main():
     app.add_handler(MessageHandler(filters.UpdateType.CHANNEL_POST, auto_save))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_episode))
 
-    print("TMKOC Bot running (AUTO SAVE + NOT FOUND FIXED)")
+    print("TMKOC Bot running (FAST • AUTO SAVE • NO BLOCK)")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
