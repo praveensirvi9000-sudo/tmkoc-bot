@@ -11,29 +11,29 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
-import os, re, asyncio, json
+import os, asyncio, json
 
 # ================= BASIC CONFIG =================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 SOURCE_CHANNEL = int(os.getenv("SOURCE_CHANNEL"))
 
 FORCE_CHANNEL = "@Tmkocc_backup"
-AUTO_DELETE_TIME = 120  # 2 minutes
+AUTO_DELETE_TIME = 120  # seconds
 
 QUALITY_ORDER = ["1080p", "720p", "540p", "360p", "240p"]
 
-# ================= INTRO TEXT =================
+# ================= TEXTS =================
 INTRO_TEXT = (
     "🎬 𝗧𝗠𝗞𝗢𝗖 𝗘𝗽𝗶𝘀𝗼𝗱𝗲 𝗕𝗼𝘁\n\n"
     "नमस्ते 🙏\n\n"
-    "Ye bot specially *Taarak Mehta Ka Ooltah Chashmah* ke fans ke liye "
+    "Ye bot *Taarak Mehta Ka Ooltah Chashmah* ke fans ke liye "
     "professionally develop kiya gaya hai ❤️\n\n"
     "📺 Yahan aapko milega:\n"
     "• TMKOC ke purane aur naye episodes\n"
     "• Multiple video qualities (240p → 1080p)\n"
     "• Simple, clean aur ad-free experience\n\n"
     "📌 Use ka tareeqa:\n"
-    "Bas episode number bhejo aur apni pasand ki quality select karo.\n\n"
+    "Bas episode number bhejo aur quality select karo.\n\n"
     "🧾 Example:\n"
     "4627\n\n"
     "⚠️ Note:\n"
@@ -76,37 +76,39 @@ creds = Credentials.from_service_account_info(service_info, scopes=SCOPES)
 gc = gspread.authorize(creds)
 sheet = gc.open_by_key(SHEET_ID).sheet1
 
-# ================= FORCE SUB CHECK =================
+# ================= STRICT FORCE SUB =================
 async def is_verified(user_id, context):
     try:
         member = await context.bot.get_chat_member(FORCE_CHANNEL, user_id)
-        return member.status in ["member", "administrator", "creator"]
+        return member.status in ("member", "administrator", "creator")
     except:
         return False
+
+async def force_sub_message(update):
+    keyboard = [[
+        InlineKeyboardButton("🔔 Join Channel", url="https://t.me/Tmkocc_backup")
+    ]]
+    await update.message.reply_text(
+        "🔒 Bot use karne ke liye pehle channel join karna zaroori hai.\n\n"
+        "Join karne ke baad fir se /start bhejein 👇",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 # ================= START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_verified(update.effective_user.id, context):
-        keyboard = [
-            [InlineKeyboardButton("🔔 Join Channel", url="https://t.me/Tmkocc_backup")],
-        ]
-        await update.message.reply_text(
-            "🔒 Bot use karne ke liye pehle channel join karna zaroori hai.\n\n"
-            "Channel join karne ke baad fir se /start bhejein 👇",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
+        await force_sub_message(update)
         return
-
     await update.message.reply_text(INTRO_TEXT)
 
-# ================= USER SEARCH =================
+# ================= EPISODE SEARCH =================
 async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    ep = update.message.text.strip()
-    if not ep.isdigit():
+    if not await is_verified(update.effective_user.id, context):
+        await force_sub_message(update)
         return
 
-    if not await is_verified(update.effective_user.id, context):
-        await start(update, context)
+    ep = update.message.text.strip()
+    if not ep.isdigit():
         return
 
     processing = await update.message.reply_text("⏳ Episode check ho raha hai...")
@@ -121,7 +123,6 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(NOT_FOUND_TEXT)
         return
 
-    # build quality buttons
     buttons = []
     for q in QUALITY_ORDER:
         for r in data:
@@ -129,7 +130,7 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 buttons.append([
                     InlineKeyboardButton(
                         f"🎥 {q}",
-                        callback_data=f"send|{ep}|{r[2]}"
+                        callback_data=f"send|{ep}|{q}"
                     )
                 ])
 
@@ -138,36 +139,42 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 
-# ================= SEND VIDEO (MULTI-CLICK FIX) =================
+# ================= SEND VIDEO (FIXED CALLBACK) =================
 async def send_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
 
-    _, ep, msg_id = q.data.split("|")
+    _, ep, quality = q.data.split("|")
 
-    # send video
+    # 🔥 message_id fresh read from sheet (NO CALLBACK OVERFLOW)
+    rows = sheet.get_all_values()
+    msg_id = None
+    for r in rows[1:]:
+        if len(r) >= 3 and r[0] == ep and r[1] == quality:
+            msg_id = r[2]
+            break
+
+    if not msg_id:
+        await q.message.reply_text("❌ Ye quality abhi available nahi hai.")
+        return
+
     sent = await context.bot.copy_message(
         chat_id=q.message.chat_id,
         from_chat_id=SOURCE_CHANNEL,
         message_id=int(msg_id)
     )
 
-    # auto delete notice
     warn = await q.message.reply_text(AUTO_DELETE_TEXT)
 
-    # 🔥 IMPORTANT FIX:
-    # send fresh buttons again so user can click another quality
-    rows = sheet.get_all_values()
-    data = [r for r in rows[1:] if len(r) >= 3 and r[0] == ep]
-
+    # 🔁 send buttons again (multi-click support)
     buttons = []
     for ql in QUALITY_ORDER:
-        for r in data:
-            if r[1] == ql:
+        for r in rows[1:]:
+            if r[0] == ep and r[1] == ql:
                 buttons.append([
                     InlineKeyboardButton(
                         f"🎥 {ql}",
-                        callback_data=f"send|{ep}|{r[2]}"
+                        callback_data=f"send|{ep}|{ql}"
                     )
                 ])
 
@@ -193,7 +200,7 @@ def main():
     app.add_handler(CallbackQueryHandler(send_cb, pattern="^send"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_episode))
 
-    print("TMKOC Bot running (QUALITY MULTI-CLICK FIXED)")
+    print("TMKOC Bot running (STRICT FORCE-SUB + QUALITY FIXED)")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
