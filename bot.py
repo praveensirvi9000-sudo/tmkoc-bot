@@ -146,7 +146,7 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await asyncio.sleep(0.5)
 
     try:
-        rows = sheet.get("A2:C10000")  # FAST & SAFE
+        rows = sheet.get("A2:C10000")
     except:
         await processing.delete()
         await update.message.reply_text(
@@ -155,12 +155,21 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    data = [r for r in rows if len(r) >= 3 and r[0] == ep]
+    # ✅ SAFE & GUARANTEED MATCH
+    data = []
+    for r in rows:
+        if len(r) < 3:
+            continue
+        if str(r[0]).strip() == ep:
+            data.append(r)
 
     await processing.delete()
 
-    if not data:
-        await update.message.reply_text(NOT_FOUND_TEXT, parse_mode="Markdown")
+    if len(data) == 0:
+        await update.message.reply_text(
+            NOT_FOUND_TEXT,
+            parse_mode="Markdown"
+        )
         return
 
     await update.message.reply_text(
@@ -200,7 +209,7 @@ def main():
     app.add_handler(MessageHandler(filters.UpdateType.CHANNEL_POST, auto_save))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_episode))
 
-    print("TMKOC Bot running (FAST • AUTO SAVE • NO BLOCK)")
+    print("TMKOC Bot running (FINAL • STABLE • FAST)")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
