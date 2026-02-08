@@ -6,7 +6,7 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
-import os, asyncio, json
+import os, asyncio, json, re
 
 # ================= BASIC CONFIG =================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -35,19 +35,27 @@ INTRO_TEXT = (
 )
 
 NOT_FOUND_TEXT = (
-    "*Episode available nahi hai 😔*\n\n"
+    "*❌ Episode Available Nahi Hai*\n\n"
+    "Aapne jo episode number search kiya hai,\n"
+    "wo abhi hamare database me maujood nahi hai 😔\n\n"
+    "*Possible reasons:*\n"
+    "• Episode upload nahi hua hai\n"
+    "• Thodi der pehle hi telecast hua ho\n"
+    "• Upload processing me ho\n\n"
+    "*Aap kya kar sakte ho?*\n"
     "Agar aap is episode ki request karna chahte ho,\n"
-    "to admin se yahan contact karein 👇\n\n"
-    "@Admi88_bot\n\n"
-    "_Dhanyavaad 🙏_"
+    "to admin se directly contact karein 👇\n\n"
+    "👉 @Admi88_bot\n\n"
+    "_Dhanyavaad 🙏_\n"
+    "*TMKOC Episode Bot*"
 )
 
 AUTO_DELETE_TEXT = (
-    "*Important Notice ⚠️*\n\n"
-    "Copyright reasons ki wajah se ye episode\n"
-    "*2 minutes* ke andar automatically delete ho jaayega.\n\n"
-    "Please is video ko abhi apne _Saved Messages_ me "
-    "forward kar lo 📥\n\n"
+    "*⚠️ Important Notice*\n\n"
+    "Copyright aur safety reasons ki wajah se\n"
+    "ye episode *2 minutes* ke andar automatically delete ho jaayega.\n\n"
+    "📥 Please is video ko abhi apne _Saved Messages_ me "
+    "forward kar lo.\n\n"
     "_Support ke liye shukriya ❤️_"
 )
 
@@ -97,6 +105,27 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text(INTRO_TEXT, parse_mode="Markdown")
 
+# ================= AUTO SAVE FROM SOURCE CHANNEL =================
+async def auto_save(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.channel_post:
+        return
+
+    msg = update.channel_post
+    text = msg.caption or (msg.document.file_name if msg.document else "") or ""
+
+    ep_match = re.search(r"Ep\s*(\d+)", text, re.IGNORECASE)
+    q_match = re.search(r"(240p|360p|540p|720p|1080p)", text, re.IGNORECASE)
+
+    if not ep_match or not q_match:
+        return
+
+    ep = ep_match.group(1)
+    quality = q_match.group(1)
+    msg_id = msg.message_id
+
+    sheet.append_row([ep, quality, msg_id])
+    print(f"[AUTO SAVE] Ep{ep} {quality} saved")
+
 # ================= EPISODE SEARCH =================
 async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_force_sub(update.effective_user.id, context):
@@ -125,17 +154,17 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
-    sent_messages = []
+    sent_msgs = []
 
     for q in QUALITY_ORDER:
         for r in data:
             if r[1] == q:
-                msg = await context.bot.copy_message(
+                m = await context.bot.copy_message(
                     chat_id=update.message.chat_id,
                     from_chat_id=SOURCE_CHANNEL,
                     message_id=int(r[2])
                 )
-                sent_messages.append(msg)
+                sent_msgs.append(m)
                 await asyncio.sleep(0.5)
 
     warn = await update.message.reply_text(
@@ -145,7 +174,7 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await asyncio.sleep(AUTO_DELETE_TIME)
     try:
-        for m in sent_messages:
+        for m in sent_msgs:
             await m.delete()
         await warn.delete()
     except:
@@ -156,9 +185,10 @@ def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.UpdateType.CHANNEL_POST, auto_save))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_episode))
 
-    print("TMKOC Bot running (FINAL CLEAN VERSION)")
+    print("TMKOC Bot running (AUTO SAVE + NOT FOUND FIXED)")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
