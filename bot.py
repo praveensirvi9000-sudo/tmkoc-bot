@@ -24,7 +24,7 @@ QUALITY_ORDER = ["1080p", "720p", "540p", "360p", "240p"]
 MAINTENANCE = False
 CONTACT_MODE = {}
 
-# ================= INTRO TEXT (LOCKED) =================
+# ================= INTRO TEXT (DO NOT TOUCH) =================
 INTRO_TEXT = """🎬 𝗧𝗠𝗞𝗢𝗖 𝗘𝗽𝗶𝘀𝗼𝗱𝗲 𝗕𝗼𝘁
 
 Namaste 🙏
@@ -77,7 +77,8 @@ NOT_FOUND_TEXT = (
 
 FOUND_TEXT = (
     "🎉 Episode mil gaya 😄\n\n"
-    "Niche se quality select karein 👇"
+    "Niche se quality select karein 👇\n"
+    "Aap ek se zyada quality bhi select kar sakte ho."
 )
 
 CONTACT_START_TEXT = (
@@ -96,17 +97,6 @@ MAINTENANCE_TEXT = (
     "Kripya thodi der baad try karein 🙏"
 )
 
-# ================= CUSTOM CAPTION =================
-CUSTOM_CAPTION = (
-    "━━━━━━━━━━━━━━━━━━\n"
-    "🎬 𝗧𝗠𝗞𝗢𝗖 𝗘𝗽𝗶𝘀𝗼𝗱𝗲\n\n"
-    "📺 Episode: <b>{ep}</b>\n"
-    "🎥 Quality: <b>{quality}</b>\n\n"
-    "🔗 Join Official Channel:\n"
-    "<a href='https://t.me/tmkocdirect'>@tmkocdirect</a>\n"
-    "━━━━━━━━━━━━━━━━━━"
-)
-
 # ================= GOOGLE SHEET =================
 import gspread
 from google.oauth2.service_account import Credentials
@@ -123,11 +113,11 @@ creds = Credentials.from_service_account_info(SERVICE_JSON, scopes=SCOPES)
 gc = gspread.authorize(creds)
 sheet = gc.open_by_key(SHEET_ID).sheet1
 
-# ================= FORCE SUB (LIVE CHECK) =================
+# ================= FORCE SUB (STRICT & LIVE) =================
 async def is_verified(user_id, context):
     try:
         member = await context.bot.get_chat_member(FORCE_CHANNEL, user_id)
-        return member.status in ["member", "administrator", "creator"]
+        return member.status in ("member", "administrator", "creator")
     except:
         return False
 
@@ -234,7 +224,7 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 buttons.append([
                     InlineKeyboardButton(
                         f"🎥 {q}",
-                        callback_data=f"send|{ep}|{q}|{r[2]}"
+                        callback_data=f"send|{r[2]}"
                     )
                 ])
 
@@ -248,20 +238,16 @@ async def send_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
 
-    _, ep, quality, msg_id = q.data.split("|")
-    msg_id = int(msg_id)
+    if not await is_verified(q.from_user.id, context):
+        await q.answer("Pehle channel join karo", show_alert=True)
+        return
+
+    msg_id = int(q.data.split("|")[1])
 
     sent = await context.bot.copy_message(
         chat_id=q.message.chat_id,
         from_chat_id=SOURCE_CHANNEL,
         message_id=msg_id
-    )
-
-    await context.bot.send_message(
-        chat_id=q.message.chat_id,
-        text=CUSTOM_CAPTION.format(ep=ep, quality=quality),
-        parse_mode="HTML",
-        disable_web_page_preview=True
     )
 
     warn = await context.bot.send_message(
@@ -316,7 +302,7 @@ def main():
     app.add_handler(MessageHandler(filters.UpdateType.CHANNEL_POST, auto_save))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_episode))
 
-    print("Bot running – FINAL STABLE VERSION")
+    print("Bot running – FINAL STRICT FORCE-SUB VERSION")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
