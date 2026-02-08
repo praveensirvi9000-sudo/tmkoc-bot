@@ -1,13 +1,8 @@
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
+from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     MessageHandler,
-    CallbackQueryHandler,
     ContextTypes,
     filters,
 )
@@ -24,38 +19,36 @@ QUALITY_ORDER = ["1080p", "720p", "540p", "360p", "240p"]
 
 # ================= TEXTS =================
 INTRO_TEXT = (
-    "🎬 𝗧𝗠𝗞𝗢𝗖 𝗘𝗽𝗶𝘀𝗼𝗱𝗲 𝗕𝗼𝘁\n\n"
-    "नमस्ते 🙏\n\n"
+    "*TMKOC Episode Bot*\n\n"
+    "_Namaste 🙏_\n\n"
     "Ye bot *Taarak Mehta Ka Ooltah Chashmah* ke fans ke liye "
     "professionally develop kiya gaya hai ❤️\n\n"
-    "📺 Yahan aapko milega:\n"
+    "*Yahan aapko milega:*\n"
     "• TMKOC ke purane aur naye episodes\n"
-    "• Multiple video qualities (240p → 1080p)\n"
-    "• Simple, clean aur ad-free experience\n\n"
-    "📌 Use ka tareeqa:\n"
-    "Bas episode number bhejo aur quality select karo.\n\n"
-    "🧾 Example:\n"
-    "4627\n\n"
-    "⚠️ Note:\n"
-    "Copyright reasons ki wajah se videos limited time ke liye hoti hain.\n"
-    "Isliye episode milte hi *Saved Messages* me forward kar lena.\n\n"
-    "Happy Watching 😊"
+    "• Sabhi available video qualities (240p se 1080p tak)\n"
+    "• Simple, fast aur ad-free experience\n\n"
+    "*Use ka tareeqa:*\n"
+    "Bas episode number bhejo.\n\n"
+    "*Example:*\n"
+    "`4627`\n\n"
+    "_Happy watching 😊_"
 )
 
 NOT_FOUND_TEXT = (
-    "❌ Episode available nahi hai 😔\n\n"
+    "*Episode available nahi hai 😔*\n\n"
     "Agar aap is episode ki request karna chahte ho,\n"
     "to admin se yahan contact karein 👇\n\n"
-    "👉 @Admi88_bot\n\n"
-    "Dhanyavaad 🙏"
+    "@Admi88_bot\n\n"
+    "_Dhanyavaad 🙏_"
 )
 
 AUTO_DELETE_TEXT = (
-    "⚠️ Important Notice\n\n"
-    "Copyright / safety reasons ki wajah se\n"
-    "ye episode ⏳ *2 minutes* ke andar automatically delete ho jaayega.\n\n"
-    "📥 Please abhi is video ko apne *Saved Messages* me forward kar lo.\n\n"
-    "Support ke liye shukriya ❤️"
+    "*Important Notice ⚠️*\n\n"
+    "Copyright reasons ki wajah se ye episode\n"
+    "*2 minutes* ke andar automatically delete ho jaayega.\n\n"
+    "Please is video ko abhi apne _Saved Messages_ me "
+    "forward kar lo 📥\n\n"
+    "_Support ke liye shukriya ❤️_"
 )
 
 # ================= GOOGLE SHEET =================
@@ -63,47 +56,50 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 SHEET_ID = "1cm1YSfzkJ3zVXhHpCWCxDdGPNPmhEgik09Qiw0BNLk8"
-
 SERVICE_JSON = os.getenv("GOOGLE_SERVICE_JSON")
-service_info = json.loads(SERVICE_JSON)
 
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
-
-creds = Credentials.from_service_account_info(service_info, scopes=SCOPES)
+creds = Credentials.from_service_account_info(
+    json.loads(SERVICE_JSON),
+    scopes=[
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ],
+)
 gc = gspread.authorize(creds)
 sheet = gc.open_by_key(SHEET_ID).sheet1
 
-# ================= STRICT FORCE SUB =================
-async def is_verified(user_id, context):
+# ================= FORCE SUB (FIRST TIME ONLY) =================
+VERIFIED_USERS = set()
+
+async def check_force_sub(user_id, context):
+    if user_id in VERIFIED_USERS:
+        return True
     try:
         member = await context.bot.get_chat_member(FORCE_CHANNEL, user_id)
-        return member.status in ("member", "administrator", "creator")
+        if member.status in ("member", "administrator", "creator"):
+            VERIFIED_USERS.add(user_id)
+            return True
     except:
-        return False
+        pass
+    return False
 
 async def force_sub_message(update):
-    keyboard = [[
-        InlineKeyboardButton("🔔 Join Channel", url="https://t.me/Tmkocc_backup")
-    ]]
     await update.message.reply_text(
         "🔒 Bot use karne ke liye pehle channel join karna zaroori hai.\n\n"
-        "Join karne ke baad fir se /start bhejein 👇",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        "Channel join karne ke baad fir se /start bhejein 👇\n\n"
+        "@Tmkocc_backup"
     )
 
 # ================= START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_verified(update.effective_user.id, context):
+    if not await check_force_sub(update.effective_user.id, context):
         await force_sub_message(update)
         return
-    await update.message.reply_text(INTRO_TEXT)
+    await update.message.reply_text(INTRO_TEXT, parse_mode="Markdown")
 
 # ================= EPISODE SEARCH =================
 async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_verified(update.effective_user.id, context):
+    if not await check_force_sub(update.effective_user.id, context):
         await force_sub_message(update)
         return
 
@@ -120,74 +116,37 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await processing.delete()
 
     if not data:
-        await update.message.reply_text(NOT_FOUND_TEXT)
+        await update.message.reply_text(NOT_FOUND_TEXT, parse_mode="Markdown")
         return
 
-    buttons = []
+    await update.message.reply_text(
+        f"*Episode {ep} mil gaya 🎉*\n\n"
+        "_Sabhi available qualities bheji ja rahi hain…_",
+        parse_mode="Markdown"
+    )
+
+    sent_messages = []
+
     for q in QUALITY_ORDER:
         for r in data:
             if r[1] == q:
-                buttons.append([
-                    InlineKeyboardButton(
-                        f"🎥 {q}",
-                        callback_data=f"send|{ep}|{q}"
-                    )
-                ])
+                msg = await context.bot.copy_message(
+                    chat_id=update.message.chat_id,
+                    from_chat_id=SOURCE_CHANNEL,
+                    message_id=int(r[2])
+                )
+                sent_messages.append(msg)
+                await asyncio.sleep(0.5)
 
-    await update.message.reply_text(
-        "🎉 Episode mil gaya!\n\nQuality select karo 👇",
-        reply_markup=InlineKeyboardMarkup(buttons)
+    warn = await update.message.reply_text(
+        AUTO_DELETE_TEXT,
+        parse_mode="Markdown"
     )
-
-# ================= SEND VIDEO (FIXED CALLBACK) =================
-async def send_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-
-    _, ep, quality = q.data.split("|")
-
-    # 🔥 message_id fresh read from sheet (NO CALLBACK OVERFLOW)
-    rows = sheet.get_all_values()
-    msg_id = None
-    for r in rows[1:]:
-        if len(r) >= 3 and r[0] == ep and r[1] == quality:
-            msg_id = r[2]
-            break
-
-    if not msg_id:
-        await q.message.reply_text("❌ Ye quality abhi available nahi hai.")
-        return
-
-    sent = await context.bot.copy_message(
-        chat_id=q.message.chat_id,
-        from_chat_id=SOURCE_CHANNEL,
-        message_id=int(msg_id)
-    )
-
-    warn = await q.message.reply_text(AUTO_DELETE_TEXT)
-
-    # 🔁 send buttons again (multi-click support)
-    buttons = []
-    for ql in QUALITY_ORDER:
-        for r in rows[1:]:
-            if r[0] == ep and r[1] == ql:
-                buttons.append([
-                    InlineKeyboardButton(
-                        f"🎥 {ql}",
-                        callback_data=f"send|{ep}|{ql}"
-                    )
-                ])
-
-    if buttons:
-        await context.bot.send_message(
-            chat_id=q.message.chat_id,
-            text="🔁 Aur quality chahiye? Neeche select karo 👇",
-            reply_markup=InlineKeyboardMarkup(buttons)
-        )
 
     await asyncio.sleep(AUTO_DELETE_TIME)
     try:
-        await sent.delete()
+        for m in sent_messages:
+            await m.delete()
         await warn.delete()
     except:
         pass
@@ -197,10 +156,9 @@ def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(send_cb, pattern="^send"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_episode))
 
-    print("TMKOC Bot running (STRICT FORCE-SUB + QUALITY FIXED)")
+    print("TMKOC Bot running (FINAL CLEAN VERSION)")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
