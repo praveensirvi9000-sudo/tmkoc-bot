@@ -1,69 +1,75 @@
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     MessageHandler,
+    CallbackQueryHandler,
     ContextTypes,
     filters,
 )
-import os, asyncio, json, re
-
-# ================= BASIC CONFIG =================
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-SOURCE_CHANNEL = int(os.getenv("SOURCE_CHANNEL"))
-
-FORCE_CHANNEL = "@Tmkocc_backup"
-AUTO_DELETE_TIME = 120  # seconds
-
-QUALITY_ORDER = ["1080p", "720p", "540p", "360p", "240p"]
-
-# Is set ko add kiya hai taaki delete task kill na ho (Fix for auto-delete)
-BACKGROUND_TASKS = set()
-
-# ================= TEXTS =================
-INTRO_TEXT = (
-    "*TMKOC Episode Bot*\n\n"
-    "_Namaste 🙏_\n\n"
-    "Ye bot *Taarak Mehta Ka Ooltah Chashmah* ke fans ke liye "
-    "professionally develop kiya gaya hai ❤️\n\n"
-    "*Yahan aapko milega:*\n"
-    "• TMKOC ke purane aur naye episodes\n"
-    "• Sabhi available video qualities (240p se 1080p tak)\n"
-    "• Simple, fast aur ad-free experience\n\n"
-    "*Use ka tareeqa:*\n"
-    "Bas episode number bhejo.\n\n"
-    "*Example:*\n"
-    "`4627`\n\n"
-    "_Happy watching 😊_"
-)
-
-# Yahan Maine \ add kiya hai username me (Fix for Not Found Message)
-NOT_FOUND_TEXT = (
-    "*❌ Episode Available Nahi Hai*\n\n"
-    "Aapne jo episode number search kiya hai,\n"
-    "wo abhi hamare database me maujood nahi hai 😔\n\n"
-    "*Possible reasons:*\n"
-    "• Episode abhi upload nahi hua\n"
-    "• Upload processing me ho\n"
-    "• Galat episode number\n\n"
-    "*Request ke liye admin se contact karein 👇*\n"
-    "👉 @Admi88\_bot\n\n"
-    "_Dhanyavaad 🙏_\n"
-    "*TMKOC Episode Bot*"
-)
-
-AUTO_DELETE_TEXT = (
-    "*⚠️ Important Notice*\n\n"
-    "Copyright aur safety reasons ki wajah se\n"
-    "ye episode *2 minutes* ke andar automatically delete ho jaayega.\n\n"
-    "📥 Please is video ko abhi apne _Saved Messages_ me forward kar lo.\n\n"
-    "_Support ke liye shukriya ❤️_"
-)
-
-# ================= GOOGLE SHEET =================
+import os, asyncio, json, re, time
 import gspread
 from google.oauth2.service_account import Credentials
 
+# ================= BASIC CONFIG =================
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+# ✅ Ab ye seedha Hosting ke Environment Variable se ID uthayega
+ADMIN_ID = int(os.getenv("ADMIN_ID")) 
+
+SOURCE_CHANNEL = int(os.getenv("SOURCE_CHANNEL"))
+FORCE_CHANNEL = "@Tmkocc_backup"
+FORCE_CHANNEL_LINK = "https://t.me/Tmkocc_backup" 
+
+AUTO_DELETE_TIME = 120  # 2 Minutes
+QUALITY_ORDER = ["1080p", "720p", "540p", "360p", "240p"]
+START_TIME = time.time()
+BACKGROUND_TASKS = set()
+
+# ================= STYLISH FONTS & TEXTS =================
+# Maine yahan Special Unicode Fonts use kiye hain Professional Look ke liye
+
+INTRO_TEXT = (
+    "🎬 𝐓𝐌𝐊𝐎𝐂 𝐄𝐩𝐢𝐬𝐨𝐝𝐞 𝐁𝐨𝐭 🎬\n\n"
+    "👋 𝐍𝐚𝐦𝐚𝐬𝐭𝐞,\n"
+    "Ye bot *Taarak Mehta Ka Ooltah Chashmah* ke fans ke liye banaya gaya hai. ❤️\n\n"
+    "⚠️ 𝐈𝐌𝐏𝐎𝐑𝐓𝐀𝐍𝐓 𝐍𝐎𝐓𝐈𝐂𝐄\n"
+    "━━━━━━━━━━━━━━━━━━━━\n"
+    "📌 *Hamare paas Episode 4600 se lekar abhi tak ke (Latest) episodes available hain.*\n\n"
+    "📌 _Isse pehle ke (Old) episodes aapko YouTube par aasani se mil jayenge._\n\n"
+    "✨ 𝐅𝐞𝐚𝐭𝐮𝐫𝐞𝐬:\n"
+    "📺 High Quality (1080p/HD)\n"
+    "🚀 Fast & Ad-Free\n"
+    "⏱️ Auto-Delete Security\n\n"
+    "👇 𝐇𝐨𝐰 𝐭𝐨 𝐔𝐬𝐞:\n"
+    "Bas Episode Number bhejein.\n\n"
+    "📝 *Example:* `4627`\n\n"
+    "_Happy Watching!_ 🍿"
+)
+
+NOT_FOUND_TEXT = (
+    "❌ 𝐄𝐩𝐢𝐬𝐨𝐝𝐞 𝐍𝐨𝐭 𝐅𝐨𝐮𝐧𝐝\n\n"
+    "Maaf karein, ye episode hamare database mein nahi mila. 😔\n\n"
+    "🧐 𝐏𝐨𝐬𝐬𝐢𝐛𝐥𝐞 𝐑𝐞𝐚𝐬𝐨𝐧𝐬:\n"
+    "• Ye episode 4600 se purana hai (YouTube check karein)\n"
+    "• Episode abhi upload processing mein hai\n"
+    "• Aapne galat number type kiya hai\n\n"
+    "📞 𝐂𝐨𝐧𝐭𝐚𝐜𝐭 𝐀𝐝𝐦𝐢𝐧:\n"
+    "👉 @Admi88\_bot\n\n"
+    "🤖 𝐓𝐌𝐊𝐎𝐂 𝐁𝐨𝐭"
+)
+
+AUTO_DELETE_TEXT = (
+    "⚠️ 𝐀𝐔𝐓𝐎 𝐃𝐄𝐋𝐄𝐓𝐄 𝐀𝐋𝐄𝐑𝐓\n"
+    "━━━━━━━━━━━━━━━━━━━━\n"
+    "🔒 *Copyright Protection Active*\n\n"
+    "Ye Video Files aur ye Message agle\n"
+    "⏳ *2 Minutes* mein delete ho jayenge.\n\n"
+    "📥 *Tip:* Video ko turant apne _Saved Messages_ mein forward kar lein.\n\n"
+    "❤️ 𝐓𝐡𝐚𝐧𝐤 𝐲𝐨𝐮 𝐟𝐨𝐫 𝐒𝐮𝐩𝐩𝐨𝐫𝐭"
+)
+
+# ================= GOOGLE SHEET =================
 SHEET_ID = "1cm1YSfzkJ3zVXhHpCWCxDdGPNPmhEgik09Qiw0BNLk8"
 SERVICE_JSON = os.getenv("GOOGLE_SERVICE_JSON")
 
@@ -77,119 +83,138 @@ creds = Credentials.from_service_account_info(
 gc = gspread.authorize(creds)
 sheet = gc.open_by_key(SHEET_ID).sheet1
 
-# ================= FORCE SUB (FIRST TIME ONLY) =================
-VERIFIED_USERS = set()
-
-async def check_force_sub(user_id, context):
-    if user_id in VERIFIED_USERS:
-        return True
+# ================= FORCE SUB (STRICT MODE) =================
+async def check_subscription(user_id, context):
     try:
+        # Har request pe live check karega
         member = await context.bot.get_chat_member(FORCE_CHANNEL, user_id)
         if member.status in ("member", "administrator", "creator"):
-            VERIFIED_USERS.add(user_id)
             return True
     except:
         pass
     return False
 
-async def force_sub_message(update):
-    await update.message.reply_text(
-        "🔒 Bot use karne ke liye pehle channel join karna zaroori hai.\n\n"
-        "Channel join karne ke baad fir se /start bhejein 👇\n\n"
-        "@Tmkocc_backup"
+async def send_force_sub_message(update):
+    keyboard = [
+        [InlineKeyboardButton("📢 𝐉𝐨𝐢𝐧 𝐂𝐡𝐚𝐧𝐧𝐞𝐥 𝐍𝐨𝐰", url=FORCE_CHANNEL_LINK)],
+        [InlineKeyboardButton("✅ 𝐕𝐞𝐫𝐢𝐟𝐲 𝐒𝐮𝐛𝐬𝐜𝐫𝐢𝐩𝐭𝐢𝐨𝐧", callback_data="check_sub")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    text = (
+        "🔒 𝐀𝐜𝐜𝐞𝐬𝐬 𝐃𝐞𝐧𝐢𝐞𝐝\n\n"
+        "Bot use karne ke liye hamara Backup Channel join karna zaroori hai.\n\n"
+        "👇 *Steps to Unlock:*\n"
+        "1️⃣ Upar *Join Channel* button dabayein.\n"
+        "2️⃣ Join karne ke baad *Verify* button dabayein."
     )
+    
+    if update.callback_query:
+        await update.callback_query.message.edit_text(text, parse_mode="Markdown", reply_markup=reply_markup)
+    else:
+        await update.message.reply_text(text, parse_mode="Markdown", reply_markup=reply_markup)
 
-# ================= AUTO DELETE (NON-BLOCKING) =================
+# ================= CALLBACK (VERIFY BUTTON) =================
+async def verify_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    user_id = query.from_user.id
+    
+    if await check_subscription(user_id, context):
+        await query.answer("✅ Verified! Welcome back.")
+        await query.message.delete()
+        await context.bot.send_message(
+            chat_id=user_id,
+            text="✅ *Verification Successful!*\n\nAb aap koi bhi Episode number bhejein.\nExample: `4630`",
+            parse_mode="Markdown"
+        )
+    else:
+        await query.answer("❌ Aapne abhi tak Channel Join nahi kiya!", show_alert=True)
+
+# ================= ADMIN PANEL =================
+async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if user_id != ADMIN_ID: return
+
+    uptime_sec = int(time.time() - START_TIME)
+    uptime_hrs = uptime_sec // 3600
+    uptime_mins = (uptime_sec % 3600) // 60
+    
+    try:
+        total = len(sheet.col_values(1)) - 1
+        db_stat = "✅ Connected"
+    except:
+        total = "Error"
+        db_stat = "❌ Error"
+
+    msg = (
+        "🛡️ 𝐀𝐃𝐌𝐈𝐍 𝐏𝐀𝐍𝐄𝐋 🛡️\n"
+        "━━━━━━━━━━━━━━━━\n\n"
+        f"🤖 *System Status:* Online\n"
+        f"⏳ *Uptime:* {uptime_hrs}h {uptime_mins}m\n"
+        f"📂 *Database:* {db_stat}\n"
+        f"📺 *Total Episodes:* {total}\n"
+    )
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
+# ================= SYNCED AUTO DELETE =================
 async def auto_delete(messages, delay):
     await asyncio.sleep(delay)
     for m in messages:
-        try:
-            await m.delete()
-        except:
-            pass
+        try: await m.delete()
+        except: pass
 
-# ================= START =================
+# ================= HANDLERS =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await check_force_sub(update.effective_user.id, context):
-        await force_sub_message(update)
+    if not await check_subscription(update.effective_user.id, context):
+        await send_force_sub_message(update)
         return
     await update.message.reply_text(INTRO_TEXT, parse_mode="Markdown")
 
-# ================= AUTO SAVE FROM SOURCE CHANNEL =================
 async def auto_save(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.channel_post:
-        return
-
+    if not update.channel_post: return
     msg = update.channel_post
-    text = msg.caption or (msg.document.file_name if msg.document else "") or ""
-
+    text = msg.caption or ""
+    
     ep_match = re.search(r"Ep\s*(\d+)", text, re.IGNORECASE)
     q_match = re.search(r"(240p|360p|540p|720p|1080p)", text, re.IGNORECASE)
 
-    if not ep_match or not q_match:
-        return
+    if ep_match and q_match:
+        sheet.append_row([ep_match.group(1), q_match.group(1), msg.message_id])
+        print(f"[AUTO SAVE] Ep {ep_match.group(1)} saved")
 
-    ep = ep_match.group(1)
-    quality = q_match.group(1)
-    msg_id = msg.message_id
-
-    sheet.append_row([ep, quality, msg_id])
-    print(f"[AUTO SAVE] Ep{ep} {quality} saved")
-
-# ================= EPISODE SEARCH =================
 async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await check_force_sub(update.effective_user.id, context):
-        await force_sub_message(update)
+    if not await check_subscription(update.effective_user.id, context):
+        await send_force_sub_message(update)
         return
 
     ep = update.message.text.strip()
-    if not ep.isdigit():
-        return
+    if not ep.isdigit(): return
 
-    processing = await update.message.reply_text("⏳ Episode check ho raha hai...")
+    processing = await update.message.reply_text("🔎 𝐒𝐞𝐚𝐫𝐜𝐡𝐢𝐧𝐠 𝐃𝐚𝐭𝐚𝐛𝐚𝐬𝐞...")
     await asyncio.sleep(0.5)
 
-    try:
-        rows = sheet.get("A2:C10000")
-    except:
-        try:
-            await processing.delete()
-        except:
-            pass
-        await update.message.reply_text(
-            "⚠️ Temporary issue aa raha hai.\n"
-            "Please 1 minute baad try karo 🙏"
-        )
+    try: rows = sheet.get("A2:C10000")
+    except: 
+        try: await processing.delete()
+        except: pass
+        await update.message.reply_text("⚠️ Server Busy. Try again in 1 min.")
         return
 
-    # ✅ SAFE & GUARANTEED MATCH
-    data = []
-    for r in rows:
-        if len(r) < 3:
-            continue
-        if str(r[0]).strip() == ep:
-            data.append(r)
+    data = [r for r in rows if len(r) >= 3 and str(r[0]).strip() == ep]
 
-    try:
-        await processing.delete()
-    except:
-        pass
+    try: await processing.delete()
+    except: pass
 
-    if len(data) == 0:
-        await update.message.reply_text(
-            NOT_FOUND_TEXT,
-            parse_mode="Markdown"
-        )
+    if not data:
+        await update.message.reply_text(NOT_FOUND_TEXT, parse_mode="Markdown")
         return
 
     await update.message.reply_text(
-        f"*Episode {ep} mil gaya 🎉*\n\n"
-        "_Sabhi available qualities bheji ja rahi hain…_",
+        f"✅ 𝐄𝐩𝐢𝐬𝐨𝐝𝐞 {ep} 𝐅𝐨𝐮𝐧𝐝!\n\n_Sending files..._",
         parse_mode="Markdown"
     )
 
-    sent_msgs = []
-
+    del_list = []
     for q in QUALITY_ORDER:
         for r in data:
             if r[1] == q:
@@ -199,34 +224,30 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         from_chat_id=SOURCE_CHANNEL,
                         message_id=int(r[2])
                     )
-                    sent_msgs.append(m)
+                    del_list.append(m)
                     await asyncio.sleep(0.4)
-                except:
-                    pass
+                except: pass
 
-    warn = await update.message.reply_text(
-        AUTO_DELETE_TEXT,
-        parse_mode="Markdown"
-    )
+    warn = await update.message.reply_text(AUTO_DELETE_TEXT, parse_mode="Markdown")
+    del_list.append(warn)
 
-    # 🔥 FIXED: Safe Task Creation (Taaki delete ruk na jaye)
-    task = asyncio.create_task(
-        auto_delete(sent_msgs + [warn], AUTO_DELETE_TIME)
-    )
+    task = asyncio.create_task(auto_delete(del_list, AUTO_DELETE_TIME))
     BACKGROUND_TASKS.add(task)
     task.add_done_callback(BACKGROUND_TASKS.discard)
 
-# ================= MAIN =================
+# ================= RUN =================
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-
+    
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("admin", admin_panel))
     app.add_handler(MessageHandler(filters.UpdateType.CHANNEL_POST, auto_save))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_episode))
+    app.add_handler(CallbackQueryHandler(verify_callback))
 
-    print("TMKOC Bot running (FIXED • STABLE)")
+    print("TMKOC Bot Started (Premium UI + Sync Delete)")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
-    
+                    
