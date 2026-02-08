@@ -14,84 +14,97 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 SOURCE_CHANNEL = int(os.getenv("SOURCE_CHANNEL"))
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
-FORCE_CHANNEL = "@Tmkocc_backup"      # force subscribe (OLD – unchanged)
-OFFICIAL_CHANNEL = "@tmkocdirect"     # only for users (NEW)
+FORCE_CHANNEL = "@Tmkocc_backup"
+OFFICIAL_CHANNEL = "@tmkocdirect"
 
 AUTO_DELETE_TIME = 120
 QUALITY_ORDER = ["1080p", "720p", "540p", "360p", "240p"]
 
-# ================= MAINTENANCE =================
+# ================= STATES =================
 MAINTENANCE = False
+CONTACT_MODE = {}
 
-# ================= INTRO TEXT (FINAL – BIG & PROFESSIONAL) =================
-INTRO_TEXT = (
-    "🎬 𝗧𝗠𝗞𝗢𝗖 𝗘𝗽𝗶𝘀𝗼𝗱𝗲 𝗕𝗼𝘁\n\n"
-    "<b>Namaste 🙏</b>\n\n"
-    "Yeh bot <b>Taarak Mehta Ka Ooltah Chashmah</b> ke sabhi fans ke liye "
-    "special taur par design kiya gaya hai ❤️\n\n"
-    "<b>Is bot ke features:</b>\n"
-    "• Purane aur naye TMKOC episodes 📺\n"
-    "• Multiple video qualities (240p – 1080p) 🎥\n"
-    "• Simple, clean aur ad-free experience ✨\n\n"
-    "<b>Bot ka use kaise karein?</b>\n"
-    "Sirf episode number bhejiye aur apni pasand ki quality select kijiye.\n\n"
-    "<b>Example:</b>\n"
-    "4627\n\n"
-    "<b>⚠️ Zaroori soochna:</b>\n"
-    "Copyright reasons ki wajah se videos limited time ke liye available hoti hain.\n"
-    "Isliye episode milte hi usse <b>Saved Messages</b> me forward kar lena.\n\n"
-    "🔗 <b>Official Channel:</b>\n"
-    f"{OFFICIAL_CHANNEL}\n\n"
-    "Happy Watching 😊"
-)
+# ================= INTRO TEXT (LOCKED) =================
+INTRO_TEXT = """🎬 𝗧𝗠𝗞𝗢𝗖 𝗘𝗽𝗶𝘀𝗼𝗱𝗲 𝗕𝗼𝘁
+
+Namaste 🙏
+
+Yeh bot specially *Taarak Mehta Ka Ooltah Chashmah* ke sabhi fans ke liye
+design kiya gaya hai ❤️  
+Yahan aapko TMKOC ke purane aur naye episodes
+simple, fast aur ad-free tareeke se milenge.
+
+━━━━━━━━━━━━━━━━━━
+✨ Bot ke Main Features
+━━━━━━━━━━━━━━━━━━
+• 📺 TMKOC ke old & latest episodes  
+• 🎥 Multiple video qualities  
+  (240p, 360p, 540p, 720p, 1080p)  
+• ⚡ Fast delivery & clean interface  
+• 🚫 Koi ads, koi extra steps nahi  
+
+━━━━━━━━━━━━━━━━━━
+📌 Bot Use Karne Ka Tarika
+━━━━━━━━━━━━━━━━━━
+1️⃣ Sirf episode number likho  
+2️⃣ Available quality select karo  
+3️⃣ Episode enjoy karo 😄  
+
+🧾 Example:
+4627
+
+━━━━━━━━━━━━━━━━━━
+⚠️ Zaroori Suchna
+━━━━━━━━━━━━━━━━━━
+Copyright aur safety reasons ki wajah se
+episodes limited time ke liye available hote hain.
+
+👉 Episode milte hi Saved Messages me forward kar lena 📥
+
+━━━━━━━━━━━━━━━━━━
+🔗 Official Channel
+━━━━━━━━━━━━━━━━━━
+👉 @tmkocdirect
+
+🙏 Dhanyavaad!
+Happy Watching 😊
+"""
 
 NOT_FOUND_TEXT = (
-    "❌ <b>Episode available nahi hai</b> 😔\n\n"
-    "Aapne jo episode manga hai wo abhi database me nahi mila.\n\n"
-    "Agar request karni ho to <b>/contact</b> use karein."
+    "❌ Episode available nahi hai 😔\n\n"
+    "Agar request karni ho to /contact use karein."
 )
 
 FOUND_TEXT = (
-    "🎉 <b>Good News!</b>\n\n"
-    "Aapka episode mil gaya hai 😄\n\n"
-    "Niche se apni pasand ki <b>video quality</b> select karein 👇"
+    "🎉 Episode mil gaya 😄\n\n"
+    "Niche se quality select karein 👇"
 )
 
-AUTO_DELETE_TEXT = (
-    "⚠️ <b>Important Notice</b>\n\n"
-    "Copyright / safety reasons ki wajah se\n"
-    "ye episode ⏳ <b>2 minutes</b> ke andar automatically delete ho jaayega.\n\n"
-    "📥 Baad me dekhna ho to abhi <b>Saved Messages</b> me forward kar lo.\n\n"
-    "Dhanyavaad 🙏"
-)
-
-MAINTENANCE_TEXT = (
-    "🔧 <b>Maintenance Mode</b>\n\n"
-    "Bot abhi maintenance me hai.\n"
-    "System update aur improvements chal rahe hain ⚙️\n\n"
-    "Kripya thodi der baad dobara try karein 🙏\n\n"
-    f"Updates ke liye channel join rakhein:\n{OFFICIAL_CHANNEL}"
-)
-
-# ================= CONTACT ADMIN TEXT =================
 CONTACT_START_TEXT = (
-    "📩 𝗖𝗼𝗻𝘁𝗮𝗰𝘁 𝗔𝗱𝗺𝗶𝗻\n\n"
-    "<b>Contact mode ON ho chuka hai.</b>\n\n"
-    "Ab aap jo bhi message bhejenge,\n"
-    "woh seedha admin tak pahunch jaayega 📬\n\n"
-    "Apni problem ya request likhiye ✍️"
-)
-
-CONTACT_SENT_TEXT = (
-    "✅ <b>Message Sent</b>\n\n"
-    "Aapka message admin ko bhej diya gaya hai.\n"
-    "Admin jald hi aapko jawab dega ⏳"
+    "📩 Contact Admin Mode ON\n\n"
+    "Ab aap jo bhi message bhejenge\n"
+    "wo seedha admin tak jayega."
 )
 
 EXIT_TEXT = (
-    "🚪 <b>Contact Mode Exit</b>\n\n"
-    "Aap admin contact mode se bahar aa chuke hain.\n"
-    "Ab aap normal tarike se bot use kar sakte hain 😊"
+    "✅ Contact mode OFF\n\n"
+    "Ab aap normal tarike se bot use kar sakte ho."
+)
+
+MAINTENANCE_TEXT = (
+    "🔧 Bot abhi maintenance me hai.\n\n"
+    "Kripya thodi der baad try karein 🙏"
+)
+
+# ================= CUSTOM CAPTION =================
+CUSTOM_CAPTION = (
+    "━━━━━━━━━━━━━━━━━━\n"
+    "🎬 𝗧𝗠𝗞𝗢𝗖 𝗘𝗽𝗶𝘀𝗼𝗱𝗲\n\n"
+    "📺 Episode: <b>{ep}</b>\n"
+    "🎥 Quality: <b>{quality}</b>\n\n"
+    "🔗 Join Official Channel:\n"
+    "<a href='https://t.me/tmkocdirect'>@tmkocdirect</a>\n"
+    "━━━━━━━━━━━━━━━━━━"
 )
 
 # ================= GOOGLE SHEET =================
@@ -110,32 +123,22 @@ creds = Credentials.from_service_account_info(SERVICE_JSON, scopes=SCOPES)
 gc = gspread.authorize(creds)
 sheet = gc.open_by_key(SHEET_ID).sheet1
 
-# ================= MEMORY =================
-VERIFIED = {}
-CONTACT_MODE = {}
-
-# ================= HELPERS =================
+# ================= FORCE SUB (LIVE CHECK) =================
 async def is_verified(user_id, context):
-    if user_id in VERIFIED:
-        return True
     try:
         member = await context.bot.get_chat_member(FORCE_CHANNEL, user_id)
-        if member.status in ["member", "administrator", "creator"]:
-            VERIFIED[user_id] = True
-            return True
+        return member.status in ["member", "administrator", "creator"]
     except:
-        pass
-    return False
+        return False
 
 # ================= START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
+    CONTACT_MODE.pop(uid, None)
 
     if MAINTENANCE and uid != ADMIN_ID:
-        await update.message.reply_text(MAINTENANCE_TEXT, parse_mode="HTML")
+        await update.message.reply_text(MAINTENANCE_TEXT)
         return
-
-    CONTACT_MODE.pop(uid, None)
 
     if not await is_verified(uid, context):
         keyboard = [
@@ -143,13 +146,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("✅ Verify Now", callback_data="verify")]
         ]
         await update.message.reply_text(
-            "🔒 Bot use karne ke liye pehle channel join karna zaroori hai.\n\n"
-            "Join ke baad Verify Now par click karein 👇",
+            "🔒 Pehle channel join karo, phir verify karo 👇",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
 
-    await update.message.reply_text(INTRO_TEXT, parse_mode="HTML")
+    await update.message.reply_text(INTRO_TEXT)
 
 # ================= VERIFY =================
 async def verify_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -158,11 +160,7 @@ async def verify_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if await is_verified(q.from_user.id, context):
         await q.edit_message_text("✅ Verification successful 🎉")
-        await context.bot.send_message(
-            q.message.chat_id,
-            INTRO_TEXT,
-            parse_mode="HTML"
-        )
+        await context.bot.send_message(q.message.chat_id, INTRO_TEXT)
     else:
         await q.answer("❌ Pehle channel join karo", show_alert=True)
 
@@ -170,9 +168,23 @@ async def verify_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def contact_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     CONTACT_MODE[uid] = True
-    await update.message.reply_text(CONTACT_START_TEXT, parse_mode="HTML")
 
-# ================= AUTO SAVE =================
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("❌ Exit Contact Mode", callback_data="exit_contact")]
+    ])
+
+    await update.message.reply_text(
+        CONTACT_START_TEXT,
+        reply_markup=keyboard
+    )
+
+async def exit_contact_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    CONTACT_MODE.pop(q.from_user.id, None)
+    await q.answer()
+    await q.edit_message_text(EXIT_TEXT)
+
+# ================= AUTO SAVE FROM SOURCE CHANNEL =================
 async def auto_save(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.channel_post:
         return
@@ -193,22 +205,26 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if CONTACT_MODE.get(uid):
         await context.bot.send_message(
             ADMIN_ID,
-            f"📩 New User Message\n\nUser ID: {uid}\n\n{update.message.text}"
+            f"📩 Message from user {uid}\n\n{update.message.text}"
         )
-        await update.message.reply_text(CONTACT_SENT_TEXT, parse_mode="HTML")
+        await update.message.reply_text("✅ Message admin ko bhej diya gaya.")
+        return
+
+    if not await is_verified(uid, context):
+        await start(update, context)
         return
 
     ep = update.message.text.strip()
     if not ep.isdigit():
         return
 
-    processing = await update.message.reply_text("⏳ Checking episode...")
+    processing = await update.message.reply_text("⏳ Episode check ho raha hai...")
     rows = sheet.get_all_values()[1:]
     data = [r for r in rows if r[0] == ep]
     await processing.delete()
 
     if not data:
-        await update.message.reply_text(NOT_FOUND_TEXT, parse_mode="HTML")
+        await update.message.reply_text(NOT_FOUND_TEXT)
         return
 
     buttons = []
@@ -216,13 +232,15 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for r in data:
             if r[1] == q:
                 buttons.append([
-                    InlineKeyboardButton(f"🎥 {q}", callback_data=f"send|{r[2]}")
+                    InlineKeyboardButton(
+                        f"🎥 {q}",
+                        callback_data=f"send|{ep}|{q}|{r[2]}"
+                    )
                 ])
 
     await update.message.reply_text(
         FOUND_TEXT,
-        reply_markup=InlineKeyboardMarkup(buttons),
-        parse_mode="HTML"
+        reply_markup=InlineKeyboardMarkup(buttons)
     )
 
 # ================= SEND VIDEO =================
@@ -230,14 +248,31 @@ async def send_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
 
-    msg_id = int(q.data.split("|")[1])
+    _, ep, quality, msg_id = q.data.split("|")
+    msg_id = int(msg_id)
+
     sent = await context.bot.copy_message(
-        q.message.chat_id,
-        SOURCE_CHANNEL,
-        msg_id
+        chat_id=q.message.chat_id,
+        from_chat_id=SOURCE_CHANNEL,
+        message_id=msg_id
     )
 
-    warn = await q.message.reply_text(AUTO_DELETE_TEXT, parse_mode="HTML")
+    await context.bot.send_message(
+        chat_id=q.message.chat_id,
+        text=CUSTOM_CAPTION.format(ep=ep, quality=quality),
+        parse_mode="HTML",
+        disable_web_page_preview=True
+    )
+
+    warn = await context.bot.send_message(
+        chat_id=q.message.chat_id,
+        text=(
+            "⚠️ Important Notice\n\n"
+            "Copyright / safety reasons ki wajah se\n"
+            "ye episode 2 minutes me delete ho jaayega ⏳\n\n"
+            "Saved Messages me forward kar lena 📥"
+        )
+    )
 
     await asyncio.sleep(AUTO_DELETE_TIME)
     try:
@@ -275,12 +310,13 @@ def main():
     app.add_handler(CommandHandler("admin", admin))
 
     app.add_handler(CallbackQueryHandler(verify_cb, pattern="^verify$"))
+    app.add_handler(CallbackQueryHandler(exit_contact_cb, pattern="^exit_contact$"))
     app.add_handler(CallbackQueryHandler(send_cb, pattern="^send"))
 
     app.add_handler(MessageHandler(filters.UpdateType.CHANNEL_POST, auto_save))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_episode))
 
-    print("Bot running — FINAL CLEAN VERSION")
+    print("Bot running – FINAL STABLE VERSION")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
