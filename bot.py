@@ -12,12 +12,13 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # ================= BASIC CONFIG =================
+# Ye sab Environment Variables se aayega
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-
-# Admin ID (Jisko Request milegi)
 ADMIN_ID = int(os.getenv("ADMIN_ID")) 
-
 SOURCE_CHANNEL = int(os.getenv("SOURCE_CHANNEL"))
+GOOGLE_SERVICE_JSON = os.getenv("GOOGLE_SERVICE_JSON")
+
+# Force Sub Channel Config
 FORCE_CHANNEL = "@Tmkocc_backup"
 FORCE_CHANNEL_LINK = "https://t.me/Tmkocc_backup" 
 
@@ -27,7 +28,6 @@ START_TIME = time.time()
 BACKGROUND_TASKS = set()
 
 # ================= TEXTS & FONTS =================
-# Updated Intro: Removed specific 4600+ line as requested
 INTRO_TEXT = (
     "🎬 𝐓𝐌𝐊𝐎𝐂 𝐄𝐩𝐢𝐬𝐨𝐝𝐞 𝐁𝐨𝐭 🎬\n\n"
     "👋 𝐍𝐚𝐦𝐚𝐬𝐭𝐞,\n"
@@ -51,21 +51,22 @@ AUTO_DELETE_TEXT = (
     "📥 *Tip:* Video ko turant apne _Saved Messages_ mein forward kar lein."
 )
 
-# ================= GOOGLE SHEET =================
-SHEET_ID = "1cm1YSfzkJ3zVXhHpCWCxDdGPNPmhEgik09Qiw0BNLk8"
-SERVICE_JSON = os.getenv("GOOGLE_SERVICE_JSON")
-
+# ================= GOOGLE SHEET CONNECTION =================
 creds = Credentials.from_service_account_info(
-    json.loads(SERVICE_JSON),
+    json.loads(GOOGLE_SERVICE_JSON),
     scopes=[
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
     ],
 )
 gc = gspread.authorize(creds)
+# Sheet ID check kar lena, wahi purani wali hai
+SHEET_ID = "1cm1YSfzkJ3zVXhHpCWCxDdGPNPmhEgik09Qiw0BNLk8"
 sheet = gc.open_by_key(SHEET_ID).sheet1
 
-# ================= FORCE SUB (STRICT) =================
+# ================= HELPER FUNCTIONS =================
+
+# 1. Check Subscription (Strict Mode)
 async def check_subscription(user_id, context):
     try:
         member = await context.bot.get_chat_member(FORCE_CHANNEL, user_id)
@@ -75,6 +76,7 @@ async def check_subscription(user_id, context):
         pass
     return False
 
+# 2. Force Sub Message
 async def send_force_sub_message(update):
     keyboard = [
         [InlineKeyboardButton("📢 𝐉𝐨𝐢𝐧 𝐂𝐡𝐚𝐧𝐧𝐞𝐥 𝐍𝐨𝐰", url=FORCE_CHANNEL_LINK)],
@@ -88,61 +90,64 @@ async def send_force_sub_message(update):
     else:
         await update.message.reply_text(text, reply_markup=reply_markup)
 
-# ================= BUTTON HANDLERS =================
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    data = query.data
-    user_id = query.from_user.id
-    
-    # 1. VERIFY SUBSCRIPTION
-    if data == "check_sub":
-        if await check_subscription(user_id, context):
-            await query.answer("✅ Verified! Welcome back.")
-            await query.message.delete()
-            await context.bot.send_message(
-                chat_id=user_id,
-                text="✅ *Verification Successful!*\n\nAb aap koi bhi Episode number bhejein.\nExample: `4630` ya `Ep 4630`",
-                parse_mode="Markdown"
-            )
-        else:
-            await query.answer("❌ Aapne abhi tak Channel Join nahi kiya!", show_alert=True)
-
-    # 2. REQUEST EPISODE
-    elif data.startswith("req_"):
-        ep_num = data.split("_")[1]
-        try:
-            # User Message
-            await query.edit_message_text(
-                f"✅ 𝐑𝐞𝐪𝐮𝐞𝐬𝐭 𝐒𝐞𝐧𝐭!\n\nEpisode {ep_num} ki request Admin ko bhej di gayi hai.\nJald hi upload hoga."
-            )
-            # Admin Notification
-            await context.bot.send_message(
-                chat_id=ADMIN_ID,
-                text=f"📨 *New Episode Request*\n\nUser: {query.from_user.first_name} (ID: `{user_id}`)\nRequested: *Episode {ep_num}*",
-                parse_mode="Markdown"
-            )
-        except Exception as e:
-            await query.answer("Error sending request.")
-
-# ================= SYNCED AUTO DELETE =================
+# 3. Auto Delete (ID Based - 100% Safe)
 async def auto_delete(context, chat_id, message_ids, delay):
     await asyncio.sleep(delay)
-    # Debug print
-    print(f"[DELETE] Cleaning up {len(message_ids)} messages for {chat_id}")
+    print(f"[DELETE] Deleting {len(message_ids)} messages for {chat_id}")
     for msg_id in message_ids:
         try:
-            # Using delete_message by ID is safest
             await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
         except Exception as e:
-            pass
+            pass # Agar user ne pehle hi delete kar diya to error ignore karo
 
-# ================= HANDLERS =================
+# ================= COMMAND HANDLERS =================
+
+# Start Command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_subscription(update.effective_user.id, context):
         await send_force_sub_message(update)
         return
     await update.message.reply_text(INTRO_TEXT, parse_mode="Markdown")
 
+# Admin Reply Command (/reply userID message)
+async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if user_id != ADMIN_ID:
+        return # Sirf Admin use kar sakta hai
+
+    try:
+        args = context.args
+        if len(args) < 2:
+            await update.message.reply_text("⚠️ **Format:** `/reply UserID Message`", parse_mode="Markdown")
+            return
+
+        target_user_id = int(args[0])
+        message_text = " ".join(args[1:])
+
+        # Message send karo
+        await context.bot.send_message(
+            chat_id=target_user_id,
+            text=f"📩 *Admin Message:*\n\n{message_text}",
+            parse_mode="Markdown"
+        )
+        
+        # Admin ko success batao
+        await update.message.reply_text(f"✅ Message sent to `{target_user_id}` successfully!", parse_mode="Markdown")
+
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error: {e}")
+
+# Admin Stats Panel
+async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID: return
+    
+    uptime = int(time.time() - START_TIME) // 60
+    msg = f"👮‍♂️ *Admin Panel*\n\nBot Uptime: {uptime} Mins\nStatus: Online ✅"
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
+# ================= MESSAGE HANDLERS =================
+
+# Auto Save (Channel Post)
 async def auto_save(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.channel_post: return
     msg = update.channel_post
@@ -155,6 +160,7 @@ async def auto_save(update: Update, context: ContextTypes.DEFAULT_TYPE):
         sheet.append_row([ep_match.group(1), q_match.group(1), msg.message_id])
         print(f"[AUTO SAVE] Ep {ep_match.group(1)} saved")
 
+# Get Episode (User Search)
 async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_subscription(user_id, context):
@@ -163,18 +169,15 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = update.message.text.strip()
     
-    # 🔥 SMART REGEX: Handles "4625", "Ep 4625", "Episode 4625" etc.
+    # 🔥 Smart Regex: Extracts number from "Ep 4625", "4625", "TMKOC 4625"
     match = re.search(r"(\d+)", text)
-    if not match:
-        return # Agar koi number nahi mila to ignore karega
+    if not match: return
         
-    ep_num = int(match.group(1)) # Extract the number
+    ep_num = int(match.group(1))
 
-    # 🔥 LOGIC 1: OLD EPISODES -> YOUTUBE AUTO SEARCH
+    # 🔥 CASE 1: Old Episodes (< 4600) -> YouTube
     if ep_num < 4600:
-        # Create Search Query
         search_query = f"Taarak Mehta Ka Ooltah Chashmah Episode {ep_num}"
-        # Convert spaces to + for URL
         encoded_query = search_query.replace(" ", "+")
         yt_link = f"https://www.youtube.com/results?search_query={encoded_query}"
         
@@ -188,7 +191,7 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # 🔥 LOGIC 2: DATABASE SEARCH (For 4600+)
+    # 🔥 CASE 2: New Episodes (>= 4600) -> Database Search
     processing = await update.message.reply_text("🔎 𝐒𝐞𝐚𝐫𝐜𝐡𝐢𝐧𝐠 𝐃𝐚𝐭𝐚𝐛𝐚𝐬𝐞...")
     await asyncio.sleep(0.5)
 
@@ -199,13 +202,12 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ Server Busy. Try again later.")
         return
 
-    # Filter
     data = [r for r in rows if len(r) >= 3 and str(r[0]).strip() == str(ep_num)]
 
     try: await processing.delete()
     except: pass
 
-    # 🔥 LOGIC 3: REQUEST BUTTON (If not found)
+    # 🔥 CASE 3: Not Found -> Request Button
     if not data:
         keyboard = [[InlineKeyboardButton("📤 Request This Episode", callback_data=f"req_{ep_num}")]]
         await update.message.reply_text(
@@ -215,7 +217,7 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # EPISODE FOUND - SENDING
+    # 🔥 CASE 4: Found -> Send Files + Auto Delete
     await update.message.reply_text(
         f"✅ 𝐄𝐩𝐢𝐬𝐨𝐝𝐞 {ep_num} 𝐅𝐨𝐮𝐧𝐝!\n\n_Sending files..._",
         parse_mode="Markdown"
@@ -232,31 +234,66 @@ async def get_episode(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         from_chat_id=SOURCE_CHANNEL,
                         message_id=int(r[2])
                     )
-                    # ✅ Store only ID
-                    msg_ids_to_delete.append(m.message_id) 
+                    msg_ids_to_delete.append(m.message_id) # Save ID for deletion
                     await asyncio.sleep(0.4)
                 except: pass
 
     warn = await update.message.reply_text(AUTO_DELETE_TEXT, parse_mode="Markdown")
     msg_ids_to_delete.append(warn.message_id)
 
-    # AUTO DELETE TASK
+    # Schedule Deletion Task
     task = asyncio.create_task(
         auto_delete(context, update.message.chat_id, msg_ids_to_delete, AUTO_DELETE_TIME)
     )
     BACKGROUND_TASKS.add(task)
     task.add_done_callback(BACKGROUND_TASKS.discard)
 
+# ================= CALLBACK BUTTONS =================
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    data = query.data
+    user_id = query.from_user.id
+    
+    # Verify Button
+    if data == "check_sub":
+        if await check_subscription(user_id, context):
+            await query.answer("✅ Verified! Welcome back.")
+            await query.message.delete()
+            await context.bot.send_message(chat_id=user_id, text="✅ *Verification Successful!*\n\nAb aap koi bhi Episode number bhejein.", parse_mode="Markdown")
+        else:
+            await query.answer("❌ Aapne abhi tak Channel Join nahi kiya!", show_alert=True)
+
+    # Request Button
+    elif data.startswith("req_"):
+        ep_num = data.split("_")[1]
+        try:
+            await query.edit_message_text(f"✅ 𝐑𝐞𝐪𝐮𝐞𝐬𝐭 𝐒𝐞𝐧𝐭!\n\nEpisode {ep_num} ki request Admin ko bhej di gayi hai.")
+            
+            # Admin Notification with Copy-Paste Reply Command
+            admin_msg = (
+                f"📨 *New Episode Request*\n\n"
+                f"👤 User: {query.from_user.first_name}\n"
+                f"🆔 ID: `{user_id}`\n"
+                f"📺 Requested: *Episode {ep_num}*\n\n"
+                f"👇 *To Reply Copy This:*\n"
+                f"`/reply {user_id} Episode {ep_num} upload kar diya hai!`"
+            )
+            await context.bot.send_message(chat_id=ADMIN_ID, text=admin_msg, parse_mode="Markdown")
+        except:
+            await query.answer("Error sending request.")
+
 # ================= MAIN =================
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("reply", reply_to_user)) # ✅ Added Reply Command
+    app.add_handler(CommandHandler("admin", admin_panel))
     app.add_handler(MessageHandler(filters.UpdateType.CHANNEL_POST, auto_save))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_episode))
     app.add_handler(CallbackQueryHandler(button_handler))
 
-    print("TMKOC Bot Running (Smart Input + YouTube Search)")
+    print("TMKOC Bot Running... (ALL FEATURES ACTIVE)")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
