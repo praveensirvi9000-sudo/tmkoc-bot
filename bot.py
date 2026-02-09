@@ -109,7 +109,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text(INTRO_TEXT, parse_mode="Markdown")
 
-# Admin Reply Command (/reply userID message)
+# 🔥 FIXED: Admin Reply Command (Without Markdown for Safety)
 async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id != ADMIN_ID:
@@ -124,11 +124,10 @@ async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         target_user_id = int(args[0])
         message_text = " ".join(args[1:])
 
-        # Message send karo
+        # ✅ CHANGE: Formatting hata di hai taaki delivery 100% ho
         await context.bot.send_message(
             chat_id=target_user_id,
-            text=f"📩 *Admin Message:*\n\n{message_text}",
-            parse_mode="Markdown"
+            text=f"📩 Admin Message:\n\n{message_text}"
         )
         
         # Admin ko success batao
